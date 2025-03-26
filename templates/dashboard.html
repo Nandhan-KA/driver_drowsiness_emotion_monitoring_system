@@ -1,0 +1,506 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Loading Overlay -->
+<div class="loading-overlay">
+    <div class="loading-spinner"></div>
+</div>
+
+<!-- Main Content -->
+<div class="container-fluid main-container">
+    <!-- Add current time display -->
+    <div class="dashboard-header mb-3">
+        <div class="current-time-display">
+            <i class="fas fa-clock me-2"></i>
+            <span id="current-time"></span>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Video Feed Column -->
+        <div class="col-lg-8">
+            <div class="dashboard-card">
+                <h4 class="mb-3">
+                    <i class="fas fa-video me-2"></i>
+                    Live Monitoring
+                </h4>
+                <div class="video-container">
+                    <img id="video-feed" src="{{ url_for('video_feed') }}" alt="Video Feed">
+                </div>
+                <div class="controls mt-3">
+                    <div class="row g-3">
+                        <div class="col-auto">
+                            <button id="liveBtn" class="btn btn-custom btn-start me-2">
+                                <i class="fas fa-camera me-2"></i>
+                                Live Monitoring
+                            </button>
+                        </div>
+                        <div class="col-auto">
+                            <div class="d-flex align-items-center">
+                                <input type="file" id="videoUpload" class="form-control me-2" accept="video/*">
+                                <button id="uploadBtn" class="btn btn-custom btn-warning">
+                                    <i class="fas fa-upload me-2"></i>
+                                    Upload Video
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <button id="stopBtn" class="btn btn-custom btn-stop" disabled>
+                                <i class="fas fa-stop me-2"></i>
+                                Stop Monitoring
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="dashboard-card">
+                <h4 class="mb-3">
+                    <i class="fas fa-chart-line me-2"></i>
+                    Monitoring Statistics
+                </h4>
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Monitoring Statistics</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="statsChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="monitoringChart"></canvas>
+                </div>
+                <div class="chart-legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #3498db"></div>
+                        <span>Eye Aspect Ratio</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #e74c3c"></div>
+                        <span>Heart Rate</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #2ecc71"></div>
+                        <span>Alert Level</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-card">
+                <h4 class="mb-3">
+                    <i class="fas fa-chart-pie me-2"></i>
+                    Emotion Distribution
+                </h4>
+                <div class="chart-container">
+                    <canvas id="emotionChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metrics Column -->
+        <div class="col-lg-4">
+            <!-- System Status -->
+            <div class="dashboard-card">
+                <h4 class="mb-3">
+                    <i class="fas fa-tachometer-alt me-2"></i>
+                    System Status
+                </h4>
+                <div class="metrics-container">
+                    <div class="metric-card">
+                        <div class="metric-value" id="drowsiness-status">
+                            <span class="status-indicator status-inactive"></span>
+                            Alert
+                        </div>
+                        <div class="metric-label">Drowsiness Status</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="ear-value">0.00</div>
+                        <div class="metric-label">Eye Aspect Ratio</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="emotion-value">Neutral</div>
+                        <div class="metric-label">Current Emotion</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="heart-rate">0</div>
+                        <div class="metric-label">Heart Rate (BPM)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alert History -->
+            <div class="dashboard-card">
+                <h4 class="mb-3">
+                    <i class="fas fa-history me-2"></i>
+                    Alert History
+                </h4>
+                <div class="alert-history" id="alert-history">
+                    <!-- Alert items will be dynamically added here -->
+                </div>
+            </div>
+
+            <div class="dashboard-card">
+                <h4 class="mb-3">
+                    <i class="fas fa-cog me-2"></i>
+                    System Status
+                </h4>
+                <div class="d-flex flex-column gap-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Monitoring Status</span>
+                        <span class="status-badge" id="monitoring-status">Inactive</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Camera Status</span>
+                        <span class="status-badge" id="camera-status">Inactive</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Alert System</span>
+                        <span class="status-badge" id="alert-status">Active</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Update current time with proper formatting
+    function updateTime() {
+        const timeElement = document.getElementById('current-time');
+        if (timeElement) {
+            const now = new Date();
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit' 
+            };
+            timeElement.textContent = now.toLocaleDateString('en-US', options);
+        }
+    }
+    
+    // Update time immediately and set interval
+    updateTime();
+    setInterval(updateTime, 1000);
+
+    // Start/Stop monitoring
+    const liveBtn = document.getElementById('liveBtn');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const videoUpload = document.getElementById('videoUpload');
+    let monitoring = false;
+
+    liveBtn.addEventListener('click', async () => {
+        try {
+            document.querySelector('.loading-overlay').style.display = 'flex';
+            const response = await fetch('/start_monitoring', { 
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    mode: 'live'
+                })
+            });
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                monitoring = true;
+                liveBtn.disabled = true;
+                uploadBtn.disabled = true;
+                videoUpload.disabled = true;
+                stopBtn.disabled = false;
+                
+                // Refresh the video feed
+                const videoFeed = document.getElementById('video-feed');
+                videoFeed.src = `${videoFeed.src}?t=${new Date().getTime()}`;
+                
+                updateStatus();
+            } else {
+                alert('Error starting monitoring: ' + data.message);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error starting monitoring: ' + error.message);
+        } finally {
+            document.querySelector('.loading-overlay').style.display = 'none';
+        }
+    });
+
+    uploadBtn.addEventListener('click', async () => {
+        const file = videoUpload.files[0];
+        if (!file) {
+            alert('Please select a video file first');
+            return;
+        }
+
+        try {
+            document.querySelector('.loading-overlay').style.display = 'flex';
+            
+            const formData = new FormData();
+            formData.append('video', file);
+
+            const response = await fetch('/upload_video', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const uploadData = await response.json();
+            
+            if (uploadData.status === 'success') {
+                // Start monitoring with uploaded video
+                const monitorResponse = await fetch('/start_monitoring', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        mode: 'upload',
+                        video_file: uploadData.filename
+                    })
+                });
+                
+                const monitorData = await monitorResponse.json();
+                
+                if (monitorData.status === 'success') {
+                    monitoring = true;
+                    liveBtn.disabled = true;
+                    uploadBtn.disabled = true;
+                    videoUpload.disabled = true;
+                    stopBtn.disabled = false;
+                    updateStatus();
+                } else {
+                    alert('Error starting monitoring: ' + monitorData.message);
+                }
+            } else {
+                alert('Error uploading video: ' + uploadData.message);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error uploading video: ' + error.message);
+        } finally {
+            document.querySelector('.loading-overlay').style.display = 'none';
+        }
+    });
+
+    stopBtn.addEventListener('click', async () => {
+        try {
+            document.querySelector('.loading-overlay').style.display = 'flex';
+            const response = await fetch('/stop_monitoring', { method: 'POST' });
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                monitoring = false;
+                liveBtn.disabled = false;
+                uploadBtn.disabled = false;
+                videoUpload.disabled = false;
+                stopBtn.disabled = true;
+                updateStatus();
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        } finally {
+            document.querySelector('.loading-overlay').style.display = 'none';
+        }
+    });
+
+    // Initialize charts
+    const monitoringCtx = document.getElementById('monitoringChart').getContext('2d');
+    const monitoringChart = new Chart(monitoringCtx, {
+        type: 'line',
+        data: {
+            labels: Array(20).fill(''),
+            datasets: [{
+                label: 'Eye Aspect Ratio',
+                data: [],
+                borderColor: '#3498db',
+                tension: 0.4,
+                fill: false
+            }, {
+                label: 'Heart Rate',
+                data: [],
+                borderColor: '#e74c3c',
+                tension: 0.4,
+                fill: false
+            }, {
+                label: 'Alert Level',
+                data: [],
+                borderColor: '#2ecc71',
+                tension: 0.4,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+
+    const emotionCtx = document.getElementById('emotionChart').getContext('2d');
+    const emotionChart = new Chart(emotionCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Happy', 'Sad', 'Angry', 'Neutral', 'Surprised', 'Fear', 'Disgust'],
+            datasets: [{
+                data: [0, 0, 0, 0, 0, 0, 0],
+                backgroundColor: [
+                    '#2ecc71',
+                    '#3498db',
+                    '#e74c3c',
+                    '#95a5a6',
+                    '#f1c40f',
+                    '#9b59b6',
+                    '#e67e22'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right'
+                }
+            }
+        }
+    });
+
+    // Update status
+    async function updateStatus() {
+        try {
+            const response = await fetch('/status');
+            
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            
+            // Update metrics
+            document.getElementById('ear-value').textContent = data.current_ear?.toFixed(2) || '0.00';
+            document.getElementById('emotion-value').textContent = data.current_emotion || 'Neutral';
+            document.getElementById('heart-rate').textContent = data.heart_rate || '0';
+            
+            // Update drowsiness status
+            const statusIndicator = document.querySelector('.status-indicator');
+            if (statusIndicator) {
+                if (data.is_drowsy) {
+                    statusIndicator.classList.remove('status-inactive');
+                    statusIndicator.classList.add('status-active');
+                    document.getElementById('drowsiness-status').innerHTML = `
+                        <span class="status-indicator status-active"></span>
+                        Drowsy
+                    `;
+                } else {
+                    statusIndicator.classList.remove('status-active');
+                    statusIndicator.classList.add('status-inactive');
+                    document.getElementById('drowsiness-status').innerHTML = `
+                        <span class="status-indicator status-inactive"></span>
+                        Alert
+                    `;
+                }
+            }
+            
+            // Add to alert history if drowsy
+            if (data.is_drowsy) {
+                addAlertToHistory('Drowsiness detected');
+            }
+
+            // Update monitoring chart
+            if (data.current_ear) {
+                monitoringChart.data.datasets[0].data.push(data.current_ear);
+                if (monitoringChart.data.datasets[0].data.length > 20) {
+                    monitoringChart.data.datasets[0].data.shift();
+                }
+            }
+            if (data.heart_rate) {
+                monitoringChart.data.datasets[1].data.push(data.heart_rate);
+                if (monitoringChart.data.datasets[1].data.length > 20) {
+                    monitoringChart.data.datasets[1].data.shift();
+                }
+            }
+            monitoringChart.update();
+
+            // Update emotion chart if emotion data changes
+            if (data.emotion_distribution) {
+                emotionChart.data.datasets[0].data = Object.values(data.emotion_distribution);
+                emotionChart.update();
+            }
+
+            // Update system status
+            const monitoringStatus = document.getElementById('monitoring-status');
+            const cameraStatus = document.getElementById('camera-status');
+            const alertStatus = document.getElementById('alert-status');
+
+            if (monitoringStatus) {
+                monitoringStatus.textContent = data.is_monitoring ? 'Active' : 'Inactive';
+                monitoringStatus.className = `status-badge ${data.is_monitoring ? 'status-active' : 'status-inactive'}`;
+            }
+
+            if (cameraStatus) {
+                cameraStatus.textContent = data.camera_active ? 'Active' : 'Inactive';
+                cameraStatus.className = `status-badge ${data.camera_active ? 'status-active' : 'status-inactive'}`;
+            }
+
+            if (alertStatus) {
+                alertStatus.textContent = data.alert_system_active ? 'Active' : 'Inactive';
+                alertStatus.className = `status-badge ${data.alert_system_active ? 'status-active' : 'status-inactive'}`;
+            }
+        } catch (error) {
+            console.error('Error updating status:', error);
+            // Don't show alerts for every error to avoid spamming the user
+            // Only update monitoring status to show connection issue
+            const monitoringStatus = document.getElementById('monitoring-status');
+            if (monitoringStatus) {
+                monitoringStatus.textContent = 'Connection Error';
+                monitoringStatus.className = 'status-badge status-inactive';
+            }
+        }
+    }
+
+    // Update status every second when monitoring
+    setInterval(() => {
+        if (monitoring) {
+            updateStatus();
+        }
+    }, 1000);
+
+    // Add alert to history
+    function addAlertToHistory(message) {
+        const alertHistory = document.getElementById('alert-history');
+        const alertItem = document.createElement('div');
+        alertItem.className = 'alert-item';
+        alertItem.innerHTML = `
+            <div class="alert-message">${message}</div>
+            <div class="alert-timestamp">${new Date().toLocaleTimeString()}</div>
+        `;
+        alertHistory.insertBefore(alertItem, alertHistory.firstChild);
+        
+        // Keep only last 10 alerts
+        while (alertHistory.children.length > 10) {
+            alertHistory.removeChild(alertHistory.lastChild);
+        }
+    }
+
+    // Initial update
+    updateStatus();
+</script>
+{% endblock %} 

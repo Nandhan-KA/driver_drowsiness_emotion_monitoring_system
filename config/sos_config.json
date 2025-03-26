@@ -1,0 +1,13 @@
+{
+    "emergency_contacts": [
+        {
+            "name": "Emergency Contact 1",
+            "phone": "+1234567890"
+        }
+    ],
+    "twilio": {
+        "account_sid": "",
+        "auth_token": "",
+        "from_number": ""
+    }
+} 

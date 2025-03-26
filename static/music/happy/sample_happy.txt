@@ -1,0 +1,2 @@
+This is a placeholder for happy music files.
+Please add .mp3 or .wav files to this directory.

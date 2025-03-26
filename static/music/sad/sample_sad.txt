@@ -1,0 +1,2 @@
+This is a placeholder for sad music files.
+Please add .mp3 or .wav files to this directory.
