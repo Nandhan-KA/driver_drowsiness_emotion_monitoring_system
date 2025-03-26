@@ -24,8 +24,8 @@ This project aims to enhance driver safety by:
 ### Installation
 1. Clone this repository
 ```
-git clone https://github.com/yourusername/drowsiness-detection-system.git
-cd drowsiness-detection-system
+git clone https://github.com/Nandhan-KA/driver_drowsiness_emotion_monitoring_system.git
+cd driver_drowsiness_emotion_monitoring_system
 ```
 
 2. Install required packages
@@ -35,7 +35,7 @@ pip install -r requirements.txt
 
 3. Run the application
 ```
-python run.py
+python drowsiness_detection.py
 ```
 
 The script will automatically:
@@ -44,21 +44,9 @@ The script will automatically:
 - Set up the SQLite database
 - Start the Flask web server
 
-### Manual Setup (if needed)
-If the automatic setup doesn't work, you can manually:
-
-1. Download the shape predictor file
-```
-python download_shape_predictor.py
-```
-
-2. Start the application
-```
-python app.py
-```
 
 ### Accessing the Application
-Access the web interface at: http://localhost:5000
+Access the web interface at: http://127.0.0.1:5050
 
 ## Project Structure
 - `app.py`: Main Flask application
@@ -75,8 +63,3 @@ Access the web interface at: http://localhost:5000
 - `templates/`: HTML templates for web interface
 - `models/`: Pre-trained emotion recognition model
 
-## License
-MIT
-
-## Contributors
-- Your Name 
